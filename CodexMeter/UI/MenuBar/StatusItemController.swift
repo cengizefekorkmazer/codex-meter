@@ -34,28 +34,62 @@ final class StatusItemController: NSObject {
 
     private func setupPopover() {
         let pop = NSPopover()
-        pop.contentSize = NSSize(width: Constants.UI.popoverWidth, height: Constants.UI.popoverHeight)
+        pop.contentSize = NSSize(width: Constants.UI.popoverWidth,
+                                 height: Constants.UI.popoverHeight)
         pop.behavior = .transient
         pop.contentViewController = NSHostingController(rootView: PopoverView(appState: appState))
         popover = pop
     }
 
     private func setupSubscriptions() {
-        appState.$snapshots
+        Publishers.CombineLatest(appState.$snapshots, appState.$settings)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in self?.renderMenuBar() }
+            .sink { [weak self] _, _ in self?.renderMenuBar() }
             .store(in: &cancellables)
         renderMenuBar()
     }
 
+    // MARK: - Render
+
     private func renderMenuBar() {
         guard let button = statusItem?.button else { return }
+        let primaryUsage = appState.primaryUsage
 
-        let usage = appState.primaryUsage
-        button.image = progressIcon(progress: usage / 100.0,
-                                    color: ColorTheme.color(forUsage: usage))
-        button.title = String(format: " %.0f%%", usage)
-        button.imagePosition = .imageLeading
+        switch appState.settings.displayMode {
+        case .iconOnly:
+            button.image = progressIcon(progress: primaryUsage / 100.0,
+                                        color: ColorTheme.color(forUsage: primaryUsage))
+            button.title = ""
+            button.attributedTitle = NSAttributedString()
+        case .compact:
+            button.image = progressIcon(progress: primaryUsage / 100.0,
+                                        color: ColorTheme.color(forUsage: primaryUsage))
+            button.imagePosition = .imageLeading
+            button.title = String(format: " %.0f%%", primaryUsage)
+            button.attributedTitle = NSAttributedString()
+        case .detailed:
+            button.image = nil
+            let snapshot = appState.snapshots.first
+            let parts: [String] = [
+                snapshot?.primary.map { "5h: \($0.usedPercent)%" } ?? "5h: —",
+                snapshot?.secondary.map { "7d: \($0.usedPercent)%" } ?? "7d: —"
+            ]
+            let title = parts.joined(separator: " | ")
+            let maxUsage = maxUsageAcross(snapshot)
+            let attrs: [NSAttributedString.Key: Any] = [
+                .foregroundColor: NSColor(ColorTheme.color(forUsage: maxUsage)),
+                .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+            ]
+            button.attributedTitle = NSAttributedString(string: title, attributes: attrs)
+        }
+    }
+
+    private func maxUsageAcross(_ snapshot: RateLimitSnapshot?) -> Double {
+        let candidates: [Double] = [
+            snapshot?.primary.map { Double($0.usedPercent) } ?? 0,
+            snapshot?.secondary.map { Double($0.usedPercent) } ?? 0
+        ]
+        return candidates.max() ?? 0
     }
 
     private func progressIcon(progress: Double, color: Color) -> NSImage {
@@ -94,6 +128,8 @@ final class StatusItemController: NSObject {
         image.isTemplate = false
         return image
     }
+
+    // MARK: - Popover toggle
 
     @objc private func togglePopover(_ sender: AnyObject?) {
         guard let statusItem,

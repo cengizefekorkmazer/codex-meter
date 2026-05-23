@@ -7,13 +7,69 @@ import SwiftUI
 
 struct PopoverView: View {
     @ObservedObject var appState: AppState
+    @State private var showingSettings = false
+
+    var body: some View {
+        ZStack {
+            // Main phase content
+            phaseView
+                .opacity(showingSettings ? 0 : 1)
+
+            if showingSettings {
+                SettingsView(appState: appState, onDismiss: {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        showingSettings = false
+                    }
+                })
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .frame(width: Constants.UI.popoverWidth, height: Constants.UI.popoverHeight)
+        .animation(.easeInOut(duration: 0.25), value: showingSettings)
+    }
+
+    @ViewBuilder
+    private var phaseView: some View {
+        switch appState.phase {
+        case .codexMissing:
+            InstallCodexView(onRetry: appState.retryStartup)
+        case .startup:
+            StartupView()
+        case .error(let reason):
+            ErrorView(reason: reason, onRetry: appState.retryStartup)
+        case .signedOut:
+            SignedOutView(
+                onSignInWithChatGPT: appState.startChatGPTLogin,
+                onUseDeviceCode: appState.startDeviceCodeLogin
+            )
+        case .signingIn(let prompt):
+            SigningInView(prompt: prompt, onCancel: appState.cancelCurrentLogin)
+        case .ready:
+            ReadyView(appState: appState, openSettings: openSettings)
+        }
+    }
+
+    private func openSettings() {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showingSettings = true
+        }
+    }
+}
+
+// MARK: - Ready view (signed in + showing data)
+
+private struct ReadyView: View {
+    @ObservedObject var appState: AppState
+    var openSettings: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
             Divider()
             if appState.snapshots.isEmpty {
-                emptyState
+                Text("No rate-limit data available for this account.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             } else {
                 ForEach(appState.snapshots) { snapshot in
                     BucketSection(snapshot: snapshot)
@@ -23,59 +79,21 @@ struct PopoverView: View {
             footer
         }
         .padding(16)
-        .frame(width: Constants.UI.popoverWidth, height: Constants.UI.popoverHeight)
     }
-
-    // MARK: - Sections
 
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Codex Usage")
-                    .font(.headline)
-                if case .signedIn(let email, let plan, _) = appState.account {
-                    Text(email ?? "Signed in")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if let plan {
-                        Text(plan.capitalized)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                } else if case .signedOut = appState.account {
-                    Text("Not signed in")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                Text("Codex Usage").font(.headline)
+                if let email = appState.account.displayEmail {
+                    Text(email).font(.caption).foregroundStyle(.secondary)
+                }
+                if let plan = appState.account.displayPlan {
+                    Text(plan.capitalized).font(.caption2).foregroundStyle(.tertiary)
                 }
             }
             Spacer()
-            connectionBadge
-        }
-    }
-
-    private var connectionBadge: some View {
-        let (label, color): (String, Color) = {
-            switch appState.connection {
-            case .connected:    return ("Connected", .green)
-            case .connecting:   return ("Connecting", .yellow)
-            case .disconnected: return ("Disconnected", .gray)
-            case .failed:       return ("Error", .red)
-            }
-        }()
-        return HStack(spacing: 6) {
-            Circle().fill(color).frame(width: 8, height: 8)
-            Text(label).font(.caption2).foregroundStyle(.secondary)
-        }
-    }
-
-    private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("No rate-limit data yet.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text("Phase 2 will populate this from `account/rateLimits/read`.")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            ConnectionBadge(state: appState.connection)
         }
     }
 
@@ -87,10 +105,50 @@ struct PopoverView: View {
                     .foregroundStyle(.tertiary)
             }
             Spacer()
-            Button("Quit", role: .destructive) {
-                NSApplication.shared.terminate(nil)
+            Button {
+                Task { await appState.refresh() }
+            } label: {
+                Image(systemName: "arrow.clockwise")
             }
-            .controlSize(.small)
+            .buttonStyle(.plain)
+            .help("Refresh")
+
+            Button(action: openSettings) {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(.plain)
+            .help("Settings")
+
+            Menu {
+                Button("Sign out", action: appState.signOut)
+                Divider()
+                Button("Quit") {
+                    NSApplication.shared.terminate(nil)
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        }
+    }
+}
+
+private struct ConnectionBadge: View {
+    let state: ConnectionState
+
+    var body: some View {
+        let (label, color): (String, Color) = {
+            switch state {
+            case .connected:    return ("Connected", .green)
+            case .connecting:   return ("Connecting", .yellow)
+            case .disconnected: return ("Disconnected", .gray)
+            case .failed:       return ("Error", .red)
+            }
+        }()
+        return HStack(spacing: 6) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(label).font(.caption2).foregroundStyle(.secondary)
         }
     }
 }

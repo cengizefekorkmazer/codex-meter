@@ -26,6 +26,20 @@ enum Constants {
         static let debugInterval: TimeInterval = 30
     }
 
+    enum Reconnect {
+        /// Backoff delays in seconds. After exhausting the list we hold at the
+        /// final value until either the user retries manually or the system
+        /// notifies us of a wake event.
+        static let backoffDelays: [TimeInterval] = [1, 2, 5, 10, 30]
+    }
+
+    enum WakeRecovery {
+        /// Sleep durations beyond this threshold (seconds) are treated as
+        /// "significant" — we discard cached snapshots and force a refresh on
+        /// wake so the UI doesn't display stale data.
+        static let significantSleepDuration: TimeInterval = 60
+    }
+
     enum UI {
         static let popoverWidth: CGFloat = 380
         static let popoverHeight: CGFloat = 420
