@@ -71,8 +71,8 @@ final class StatusItemController: NSObject {
             button.image = nil
             let snapshot = appState.snapshots.first
             let parts: [String] = [
-                snapshot?.primary.map { "5h: \($0.usedPercent)%" } ?? "5h: —",
-                snapshot?.secondary.map { "7d: \($0.usedPercent)%" } ?? "7d: —"
+                snapshot?.primary.map { "5h: \($0.displayedPercent)%" } ?? "5h: —",
+                snapshot?.secondary.map { "7d: \($0.displayedPercent)%" } ?? "7d: —"
             ]
             let title = parts.joined(separator: " | ")
             let maxUsage = maxUsageAcross(snapshot)
@@ -86,8 +86,8 @@ final class StatusItemController: NSObject {
 
     private func maxUsageAcross(_ snapshot: RateLimitSnapshot?) -> Double {
         let candidates: [Double] = [
-            snapshot?.primary.map { Double($0.usedPercent) } ?? 0,
-            snapshot?.secondary.map { Double($0.usedPercent) } ?? 0
+            snapshot?.primary.map { Double($0.displayedPercent) } ?? 0,
+            snapshot?.secondary.map { Double($0.displayedPercent) } ?? 0
         ]
         return candidates.max() ?? 0
     }

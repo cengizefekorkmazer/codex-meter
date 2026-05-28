@@ -15,6 +15,7 @@ final class AppState: ObservableObject {
     @Published private(set) var connection: ConnectionState = .disconnected
     @Published private(set) var codexBinaryFound: Bool = true
     @Published private(set) var loginAttempt: LoginPrompt?
+    @Published private(set) var apiKeyEntry: ApiKeyEntryState?
     @Published private(set) var error: AppError?
     @Published private(set) var settings: AppSettings = .load()
 
@@ -74,14 +75,13 @@ final class AppState: ObservableObject {
     // MARK: - Phase
 
     var phase: AppPhase {
-        if !codexBinaryFound { return .codexMissing }
-        if case .failed(let reason) = connection { return .error(reason) }
-        if case .disconnected = connection, account == .unknown { return .startup }
-        if case .connecting = connection { return .startup }
-        if let attempt = loginAttempt { return .signingIn(attempt) }
-        if case .signedOut = account { return .signedOut }
-        if case .signedIn = account { return .ready }
-        return .startup
+        AppPhase.derive(
+            codexBinaryFound: codexBinaryFound,
+            connection: connection,
+            account: account,
+            loginAttempt: loginAttempt,
+            apiKeyEntry: apiKeyEntry
+        )
     }
 
     // MARK: - Lifecycle
@@ -245,6 +245,36 @@ final class AppState: ObservableObject {
         Task { await performLogin(.deviceCode) }
     }
 
+    func startApiKeyEntry() {
+        apiKeyEntry = ApiKeyEntryState()
+    }
+
+    func cancelApiKeyEntry() {
+        apiKeyEntry = nil
+    }
+
+    func submitApiKey(_ key: String) {
+        apiKeyEntry?.isSubmitting = true
+        apiKeyEntry?.errorMessage = nil
+        Task {
+            do {
+                _ = try await client.loginWithApiKey(key)
+                // Successful API-key login returns immediately; the server
+                // then emits account/updated which triggers a refresh.
+                apiKeyEntry = nil
+                try? await refreshAccount()
+                try? await refreshRateLimits()
+                lastUpdated = Date()
+            } catch let appError as AppError {
+                apiKeyEntry?.isSubmitting = false
+                apiKeyEntry?.errorMessage = appError.errorDescription ?? "Sign-in failed."
+            } catch {
+                apiKeyEntry?.isSubmitting = false
+                apiKeyEntry?.errorMessage = error.localizedDescription
+            }
+        }
+    }
+
     func cancelCurrentLogin() {
         guard let attempt = loginAttempt else { return }
         let loginId = attempt.loginId
@@ -385,7 +415,7 @@ final class AppState: ObservableObject {
     // MARK: - Computed
 
     var primaryUsage: Double {
-        snapshots.first?.primary.map { Double($0.usedPercent) } ?? 0
+        snapshots.first?.primary.map { Double($0.displayedPercent) } ?? 0
     }
 }
 
@@ -397,7 +427,33 @@ enum AppPhase: Equatable {
     case error(String)
     case signedOut
     case signingIn(LoginPrompt)
+    case apiKeyEntry(ApiKeyEntryState)
     case ready
+
+    /// Pure derivation function — kept separate from `AppState` so it can be
+    /// unit-tested without spinning up the live `CodexAppServerClient`.
+    static func derive(
+        codexBinaryFound: Bool,
+        connection: ConnectionState,
+        account: AccountState,
+        loginAttempt: LoginPrompt?,
+        apiKeyEntry: ApiKeyEntryState? = nil
+    ) -> AppPhase {
+        if !codexBinaryFound { return .codexMissing }
+        if case .failed(let reason) = connection { return .error(reason) }
+        if case .disconnected = connection, account == .unknown { return .startup }
+        if case .connecting = connection { return .startup }
+        if let entry = apiKeyEntry { return .apiKeyEntry(entry) }
+        if let attempt = loginAttempt { return .signingIn(attempt) }
+        if case .signedOut = account { return .signedOut }
+        if case .signedIn = account { return .ready }
+        return .startup
+    }
+}
+
+struct ApiKeyEntryState: Equatable {
+    var isSubmitting: Bool = false
+    var errorMessage: String?
 }
 
 enum LoginPrompt: Equatable {

@@ -8,13 +8,14 @@ import SwiftUI
 struct SignedOutView: View {
     var onSignInWithChatGPT: () -> Void
     var onUseDeviceCode: () -> Void
+    var onUseApiKey: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Not signed in", systemImage: "person.crop.circle.badge.exclamationmark")
+            Label("Connect your account", systemImage: "person.crop.circle")
                 .font(.headline)
 
-            Text("Sign in to your ChatGPT account to read your Codex usage. CodexMeter doesn't see your tokens — the local Codex app-server handles authentication.")
+            Text("Sign in with your ChatGPT account to see your Codex usage. CodexMeter never sees your password — sign-in happens through Codex itself.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -23,8 +24,12 @@ struct SignedOutView: View {
                 .keyboardShortcut(.defaultAction)
                 .frame(maxWidth: .infinity)
 
-            Button("Use device code instead", action: onUseDeviceCode)
-                .buttonStyle(.borderless)
+            HStack(spacing: 16) {
+                Button("Sign in with a code", action: onUseDeviceCode)
+                    .buttonStyle(.borderless)
+                Button("Use an API key", action: onUseApiKey)
+                    .buttonStyle(.borderless)
+            }
 
             Spacer(minLength: 0)
         }

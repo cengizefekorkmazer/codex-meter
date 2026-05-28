@@ -47,4 +47,19 @@ struct RateLimitWindow: Codable, Equatable, Hashable {
             try c.encode(Int64(resetsAt.timeIntervalSince1970), forKey: .resetsAt)
         }
     }
+
+    /// Display-normalized percentage.
+    ///
+    /// The Codex backend rounds any active session up to `1%`, even when no
+    /// agent calls have happened (e.g. a single `account/read` or other
+    /// metadata query is enough). That makes the popover read "1% used" the
+    /// moment CodexMeter connects, which contradicts the user's perception
+    /// of "I haven't used Codex yet."
+    ///
+    /// We treat `0–1` as `0%` for UI/menu-bar display only; the raw
+    /// `usedPercent` is preserved for notification-threshold math so a real
+    /// crossing isn't masked.
+    var displayedPercent: Int {
+        usedPercent <= 1 ? 0 : usedPercent
+    }
 }

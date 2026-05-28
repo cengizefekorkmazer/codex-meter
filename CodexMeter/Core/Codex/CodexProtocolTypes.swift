@@ -106,9 +106,10 @@ struct RateLimitsUpdatedParams: Codable {
 enum LoginAccountParams: Encodable {
     case chatgpt(codexStreamlinedLogin: Bool?)
     case chatgptDeviceCode
+    case apiKey(String)
 
     private enum CodingKeys: String, CodingKey {
-        case type, codexStreamlinedLogin
+        case type, codexStreamlinedLogin, apiKey
     }
 
     func encode(to encoder: Encoder) throws {
@@ -119,6 +120,9 @@ enum LoginAccountParams: Encodable {
             try c.encodeIfPresent(streamlined, forKey: .codexStreamlinedLogin)
         case .chatgptDeviceCode:
             try c.encode("chatgptDeviceCode", forKey: .type)
+        case .apiKey(let key):
+            try c.encode("apiKey", forKey: .type)
+            try c.encode(key, forKey: .apiKey)
         }
     }
 }

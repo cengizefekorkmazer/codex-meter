@@ -119,6 +119,21 @@ CodexMeter/
 binary-presence state, and `PopoverView` switches on it to render the right
 screen.
 
+## Running the tests
+
+The test target covers RPC encoding/decoding (`RateLimitWindow`,
+`RateLimitsReadResult`, `CodexAccount` / `LoginAccountResponse` discriminated
+unions, the generic `JSONRPCIncomingMessage` parser), `AppPhase` derivation,
+and notification-throttling logic.
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+  xcodebuild -project CodexMeter.xcodeproj -scheme CodexMeter \
+             -destination 'platform=macOS' test
+```
+
+44 tests, no live `codex` process required.
+
 ## Privacy
 
 - CodexMeter does not collect analytics.

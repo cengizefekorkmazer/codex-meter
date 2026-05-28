@@ -42,7 +42,7 @@ enum Constants {
 
     enum UI {
         static let popoverWidth: CGFloat = 380
-        static let popoverHeight: CGFloat = 420
+        static let popoverHeight: CGFloat = 460
         static let menuBarIconSize: CGFloat = 18
     }
 }

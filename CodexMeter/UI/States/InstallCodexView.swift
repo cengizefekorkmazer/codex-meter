@@ -11,20 +11,22 @@ struct InstallCodexView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Codex CLI not found", systemImage: "exclamationmark.triangle.fill")
+            Label("Set up Codex", systemImage: "wrench.and.screwdriver")
                 .font(.headline)
-                .foregroundStyle(.orange)
 
-            Text("CodexMeter relies on the official Codex CLI. Install it with one of the following:")
+            Text("CodexMeter shows your Codex usage, but it needs the official Codex app to be installed on your Mac first.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
             VStack(alignment: .leading, spacing: 6) {
+                Text("Open Terminal and run one of these:")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 CommandRow("brew install codex")
                 CommandRow("npm i -g @openai/codex")
             }
 
-            Text("After installing, click Check Again.")
+            Text("Then come back and click \"Check Again\".")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
@@ -45,6 +47,7 @@ struct InstallCodexView: View {
 
 private struct CommandRow: View {
     let command: String
+    @State private var copied = false
 
     init(_ command: String) { self.command = command }
 
@@ -59,11 +62,13 @@ private struct CommandRow: View {
             Button {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(command, forType: .string)
+                copied = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
             } label: {
-                Image(systemName: "doc.on.doc")
+                Image(systemName: copied ? "checkmark" : "doc.on.doc")
             }
             .buttonStyle(.borderless)
-            .help("Copy")
+            .help(copied ? "Copied" : "Copy")
         }
     }
 }

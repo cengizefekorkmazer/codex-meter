@@ -133,6 +133,15 @@ final class CodexAppServerClient {
         )
     }
 
+    func loginWithApiKey(_ apiKey: String) async throws -> LoginAccountResponse {
+        guard let rpc else { throw AppError.appServerCrashed }
+        return try await rpc.request(
+            method: CodexMethod.loginStart,
+            params: LoginAccountParams.apiKey(apiKey),
+            as: LoginAccountResponse.self
+        )
+    }
+
     func cancelLogin(loginId: String) async throws {
         guard let rpc else { throw AppError.appServerCrashed }
         _ = try await rpc.request(

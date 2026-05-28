@@ -13,13 +13,7 @@ import UserNotifications
 final class NotificationService {
     static let shared = NotificationService()
 
-    /// Per `bucketWindowKey`, the resetsAt epoch we last saw and which
-    /// thresholds we've already fired for that window.
-    private struct WindowState {
-        var resetsAtEpoch: Int
-        var firedThresholds: Set<Int>
-    }
-    private var state: [String: WindowState] = [:]
+    private var throttler = ThresholdNotifier()
 
     private init() {}
 
@@ -35,63 +29,26 @@ final class NotificationService {
     /// crossed thresholds. Pass an empty thresholds array to suppress all
     /// notifications.
     func checkAndNotify(snapshots: [RateLimitSnapshot], thresholds: [Int]) {
-        guard !thresholds.isEmpty else { return }
-        let sortedThresholds = thresholds.sorted()
-
-        for snapshot in snapshots {
-            check(window: snapshot.primary,
-                  kind: "5h",
-                  bucketId: snapshot.limitId ?? "default",
-                  thresholds: sortedThresholds)
-            check(window: snapshot.secondary,
-                  kind: "weekly",
-                  bucketId: snapshot.limitId ?? "default",
-                  thresholds: sortedThresholds)
+        let crossings = throttler.crossings(snapshots: snapshots, thresholds: thresholds)
+        for crossing in crossings {
+            send(crossing)
         }
     }
 
-    private func check(window: RateLimitWindow?, kind: String, bucketId: String, thresholds: [Int]) {
-        guard let window else { return }
-        let key = "\(bucketId).\(kind)"
-        let resetEpoch = window.resetsAt.map { Int($0.timeIntervalSince1970) } ?? 0
-
-        var current = state[key] ?? WindowState(resetsAtEpoch: resetEpoch, firedThresholds: [])
-        // Window rolled over — drop the fired set so the user gets notified
-        // again in the new window.
-        if current.resetsAtEpoch != resetEpoch {
-            current = WindowState(resetsAtEpoch: resetEpoch, firedThresholds: [])
-        }
-
-        // Fire the highest threshold the user has crossed but hasn't seen yet.
-        // (No point sending 75% and 90% back-to-back when both fired together.)
-        let unseenCrossed = thresholds
-            .filter { window.usedPercent >= $0 && !current.firedThresholds.contains($0) }
-
-        if let highest = unseenCrossed.max() {
-            send(usedPercent: window.usedPercent,
-                 threshold: highest,
-                 kind: kind,
-                 resetsAt: window.resetsAt)
-            for t in unseenCrossed { current.firedThresholds.insert(t) }
-        }
-
-        state[key] = current
-    }
-
-    private func send(usedPercent: Int, threshold: Int, kind: String, resetsAt: Date?) {
+    private func send(_ crossing: ThresholdCrossing) {
         let content = UNMutableNotificationContent()
-        let label = kind == "5h" ? "5-hour" : "weekly"
-        content.title = "Codex usage at \(usedPercent)%"
-        if let resetsAt {
+        let label = crossing.kind == "5h" ? "5-hour" : "weekly"
+        content.title = "Codex usage at \(crossing.usedPercent)%"
+        if let resetsAt = crossing.resetsAt {
             let formatter = RelativeDateTimeFormatter()
-            content.body = "Your \(label) limit crossed \(threshold)%. Resets \(formatter.localizedString(for: resetsAt, relativeTo: Date()))."
+            content.body = "Your \(label) limit crossed \(crossing.threshold)%. Resets \(formatter.localizedString(for: resetsAt, relativeTo: Date()))."
         } else {
-            content.body = "Your \(label) limit crossed \(threshold)%."
+            content.body = "Your \(label) limit crossed \(crossing.threshold)%."
         }
         content.sound = .default
 
         let request = UNNotificationRequest(
-            identifier: "codex.\(kind).\(threshold).\(Int(Date().timeIntervalSince1970))",
+            identifier: "codex.\(crossing.kind).\(crossing.threshold).\(Int(Date().timeIntervalSince1970))",
             content: content,
             trigger: nil
         )

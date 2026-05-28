@@ -40,10 +40,17 @@ struct PopoverView: View {
         case .signedOut:
             SignedOutView(
                 onSignInWithChatGPT: appState.startChatGPTLogin,
-                onUseDeviceCode: appState.startDeviceCodeLogin
+                onUseDeviceCode: appState.startDeviceCodeLogin,
+                onUseApiKey: appState.startApiKeyEntry
             )
         case .signingIn(let prompt):
             SigningInView(prompt: prompt, onCancel: appState.cancelCurrentLogin)
+        case .apiKeyEntry(let state):
+            ApiKeyEntryView(
+                errorMessage: state.errorMessage,
+                onCancel: appState.cancelApiKeyEntry,
+                onSubmit: appState.submitApiKey
+            )
         case .ready:
             ReadyView(appState: appState, openSettings: openSettings)
         }
@@ -63,22 +70,40 @@ private struct ReadyView: View {
     var openSettings: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             header
-            Divider()
             if appState.snapshots.isEmpty {
-                Text("No rate-limit data available for this account.")
+                Text("No usage data yet for this account.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(appState.snapshots) { snapshot in
-                    BucketSection(snapshot: snapshot)
+                    if appState.settings.showFiveHourLimit, let primary = snapshot.primary {
+                        LimitCard(title: "5-Hour Limit", window: primary)
+                    }
+                    if appState.settings.showWeeklyLimit, let secondary = snapshot.secondary {
+                        LimitCard(title: "7-Day Limit", window: secondary)
+                    }
+                    if appState.settings.showCredits,
+                       let credits = snapshot.credits,
+                       credits.hasCredits {
+                        CreditsCard(credits: credits)
+                    }
+                    if let reached = snapshot.rateLimitReachedType {
+                        Text(humanize(reached))
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 }
             }
             Spacer(minLength: 0)
             footer
         }
         .padding(16)
+    }
+
+    private func humanize(_ raw: String) -> String {
+        raw.replacingOccurrences(of: "_", with: " ").capitalized
     }
 
     private var header: some View {
@@ -153,66 +178,107 @@ private struct ConnectionBadge: View {
     }
 }
 
-private struct BucketSection: View {
-    let snapshot: RateLimitSnapshot
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(snapshot.limitName ?? snapshot.limitId?.capitalized ?? "Codex")
-                .font(.subheadline)
-                .fontWeight(.medium)
-
-            if let primary = snapshot.primary {
-                WindowRow(label: label(for: primary), window: primary)
-            }
-            if let secondary = snapshot.secondary {
-                WindowRow(label: label(for: secondary), window: secondary)
-            }
-
-            if let reached = snapshot.rateLimitReachedType {
-                Text(humanize(reached))
-                    .font(.caption2)
-                    .foregroundStyle(.red)
-            }
-        }
-    }
-
-    private func label(for window: RateLimitWindow) -> String {
-        switch window.windowDurationMins {
-        case 300:    return "5-hour window"
-        case 10080:  return "Weekly window"
-        case let m?: return "\(m) min window"
-        case nil:    return "Window"
-        }
-    }
-
-    private func humanize(_ raw: String) -> String {
-        raw.replacingOccurrences(of: "_", with: " ").capitalized
-    }
-}
-
-private struct WindowRow: View {
-    let label: String
+private struct LimitCard: View {
+    let title: String
     let window: RateLimitWindow
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.headline)
                 Spacer()
-                Text("\(window.usedPercent)%")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(ColorTheme.color(forUsage: Double(window.usedPercent)))
+                Text("\(window.displayedPercent)%")
+                    .font(.title3.monospacedDigit().weight(.bold))
+                    .foregroundStyle(color)
             }
-            ProgressView(value: Double(window.usedPercent), total: 100)
-                .tint(ColorTheme.color(forUsage: Double(window.usedPercent)))
+
+            ProgressView(value: Double(window.displayedPercent), total: 100)
+                .tint(color)
+                .scaleEffect(x: 1, y: 1.3, anchor: .center)
+
             if let resetsAt = window.resetsAt {
-                Text("Resets \(resetsAt.formatted(.relative(presentation: .named)))")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                HStack(spacing: 5) {
+                    Image(systemName: "clock")
+                    Text("Resets: \(formattedDelta(to: resetsAt))")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.gray.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+    }
+
+    private var color: Color {
+        ColorTheme.color(forUsage: Double(window.displayedPercent))
+    }
+
+    /// "Resets: 4h 8m" for windows under a day, "Resets: 1d 16h" for longer.
+    private func formattedDelta(to target: Date) -> String {
+        let seconds = Int(max(0, target.timeIntervalSinceNow))
+        if seconds < 60 { return "in less than a minute" }
+        let minutes = seconds / 60
+        let hours = minutes / 60
+        let days = hours / 24
+        if days >= 1 {
+            let h = hours % 24
+            return "\(days)d \(h)h"
+        }
+        let m = minutes % 60
+        return "\(hours)h \(m)m"
+    }
+}
+
+private struct CreditsCard: View {
+    let credits: RateLimitCredits
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "creditcard")
+                .font(.title3)
+                .foregroundStyle(.tint)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Credits")
+                    .font(.headline)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(amount)
+                .font(.title3.monospacedDigit().weight(.semibold))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.gray.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
+    }
+
+    private var amount: String {
+        if credits.unlimited { return "∞" }
+        let trimmed = credits.balance.trimmingCharacters(in: .whitespaces)
+        if let dollars = Double(trimmed) {
+            return String(format: "$%.2f", dollars)
+        }
+        return trimmed.hasPrefix("$") ? trimmed : "$\(trimmed)"
+    }
+
+    private var subtitle: String {
+        credits.unlimited ? "Unlimited" : "Available balance"
     }
 }
