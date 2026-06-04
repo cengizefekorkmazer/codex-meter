@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Xcode (added once the Xcode project lands)
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+Docs/
+CodexUsageMonitor_PLAN.md
