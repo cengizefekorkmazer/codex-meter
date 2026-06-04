@@ -64,6 +64,14 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// Set (or clear, with "") the manual codex binary path, then re-attempt
+    /// startup so the change takes effect without relaunching the app.
+    func setCustomCodexBinaryPath(_ path: String) {
+        let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        updateSetting { $0.customCodexBinaryPath = trimmed }
+        retryStartup()
+    }
+
     deinit {
         listenerTasks.forEach { $0.cancel() }
         reconnectTask?.cancel()
@@ -90,7 +98,7 @@ final class AppState: ObservableObject {
         reconnectTask?.cancel()
         reconnectTask = nil
 
-        guard CodexBinaryResolver.resolve() != nil else {
+        guard let codexPath = CodexBinaryResolver.resolve(customPath: settings.customCodexBinaryPath) else {
             codexBinaryFound = false
             connection = .disconnected
             stopPollingTimer()
@@ -103,7 +111,7 @@ final class AppState: ObservableObject {
 
         do {
             client.disconnect()  // tear down any stale state from a prior attempt
-            try await client.connect()
+            try await client.connect(codexPath: codexPath)
             connection = .connected
             consecutiveReconnectAttempts = 0
 

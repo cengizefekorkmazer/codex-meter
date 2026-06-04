@@ -35,6 +35,34 @@ struct GeneralSettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Codex") {
+                let path = appState.settings.customCodexBinaryPath
+                HStack {
+                    TextField(
+                        "Custom codex path",
+                        text: Binding(
+                            get: { appState.settings.customCodexBinaryPath },
+                            set: { appState.setCustomCodexBinaryPath($0) }
+                        ),
+                        prompt: Text("Auto-detected")
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.callout, design: .monospaced))
+
+                    Button("Browse…") {
+                        if let picked = BinaryPathPicker.choose() {
+                            appState.setCustomCodexBinaryPath(picked)
+                        }
+                    }
+                    if !path.isEmpty {
+                        Button("Clear") { appState.setCustomCodexBinaryPath("") }
+                    }
+                }
+                Text("Leave empty to auto-detect. Set this only if CodexMeter can't find your codex install (for example a custom npm or nvm location).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("What to show in the popover") {
                 Toggle("5-Hour limit", isOn: Binding(
                     get: { appState.settings.showFiveHourLimit },
