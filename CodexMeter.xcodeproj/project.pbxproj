@@ -10,6 +10,7 @@
 		0135868E403EEF1F3C0761C3 /* PopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 061C1E280E34B6EA565C35E6 /* PopoverView.swift */; };
 		0334A43FA9DC4B886AF98B0D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 072B53A6FB8D54C9230CD339 /* SettingsView.swift */; };
 		0CB9FD889FD516B44BCEFE57 /* RateLimitWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C4FE3CB4C007CF7D162D0BD /* RateLimitWindow.swift */; };
+		0D5C96FD8F5F98AA2CA25353 /* DebugLoggerRedactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6737026A097829E0D1753E70 /* DebugLoggerRedactionTests.swift */; };
 		1687F76E5D7C79DDDA395626 /* RateLimitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C8B38D01340046A2435ED82 /* RateLimitTests.swift */; };
 		16C38DB65BE1F050A65C5787 /* ColorTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 674D968D5DEEC0815A8E6E65 /* ColorTheme.swift */; };
 		1C49276CA50A8244F08D064C /* SigningInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE8E794B6126BDA857E45379 /* SigningInView.swift */; };
@@ -81,6 +82,7 @@
 		51FCF55DFA1C30D453D10FDF /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		5C8B38D01340046A2435ED82 /* RateLimitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateLimitTests.swift; sourceTree = "<group>"; };
 		60FE93063CA523EB33C46A8D /* ApiKeyEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiKeyEntryView.swift; sourceTree = "<group>"; };
+		6737026A097829E0D1753E70 /* DebugLoggerRedactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLoggerRedactionTests.swift; sourceTree = "<group>"; };
 		674D968D5DEEC0815A8E6E65 /* ColorTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTheme.swift; sourceTree = "<group>"; };
 		67BB2352ED0D3D0B64297474 /* CodexBinaryResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexBinaryResolver.swift; sourceTree = "<group>"; };
 		6CAFF69AE49D65246509407B /* ThresholdNotifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThresholdNotifierTests.swift; sourceTree = "<group>"; };
@@ -123,6 +125,7 @@
 			children = (
 				3140E061802CF8EA06C22029 /* AppPhaseTests.swift */,
 				E815AA178F6D0AEB870C0B52 /* CodexAccountTests.swift */,
+				6737026A097829E0D1753E70 /* DebugLoggerRedactionTests.swift */,
 				D7F1F34E64D55148086E4A10 /* JSONRPCIncomingMessageTests.swift */,
 				5C8B38D01340046A2435ED82 /* RateLimitTests.swift */,
 				6CAFF69AE49D65246509407B /* ThresholdNotifierTests.swift */,
@@ -364,6 +367,7 @@
 			files = (
 				DAC1E2653CE152CBCCDDD524 /* AppPhaseTests.swift in Sources */,
 				2169204158666874B2FD8EA6 /* CodexAccountTests.swift in Sources */,
+				0D5C96FD8F5F98AA2CA25353 /* DebugLoggerRedactionTests.swift in Sources */,
 				B506A16283496E6B3EF4C067 /* JSONRPCIncomingMessageTests.swift in Sources */,
 				1687F76E5D7C79DDDA395626 /* RateLimitTests.swift in Sources */,
 				956ED0618A18B6F46E9D8EB3 /* ThresholdNotifierTests.swift in Sources */,

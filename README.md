@@ -4,8 +4,9 @@ A macOS menu bar app for monitoring your Codex usage limits in real time.
 
 CodexMeter runs locally, talks to the official `codex` CLI's app-server over
 JSON-RPC, and shows your current 5-hour and weekly usage windows. It never
-reads, stores, or transmits your OpenAI credentials — authentication stays
-inside the Codex CLI.
+reads or stores your OpenAI credentials — authentication is owned by the Codex
+CLI. (If you choose API-key sign-in, the key you paste is forwarded once to the
+local Codex app-server and never written to disk by CodexMeter.)
 
 ## Features
 
@@ -87,10 +88,6 @@ CodexMeter does **not** read `~/.codex/auth.json` or any token file directly.
 All authentication is handled by the Codex app-server, which CodexMeter only
 queries via JSON-RPC.
 
-The full protocol surface used by the app is documented in
-[`Docs/PROTOCOL_NOTES.md`](Docs/PROTOCOL_NOTES.md), and a frozen JSON-Schema
-snapshot lives under [`Docs/protocol-schema/`](Docs/protocol-schema/).
-
 ## Architecture
 
 ```
@@ -132,7 +129,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
              -destination 'platform=macOS' test
 ```
 
-44 tests, no live `codex` process required.
+52 tests, no live `codex` process required.
 
 ## Privacy
 
@@ -147,7 +144,10 @@ interval, notification thresholds, etc.) in `~/Library/Preferences/`.
 
 When **Debug mode** is enabled (Settings → General), JSON-RPC traffic is
 appended to `~/Library/Caches/CodexMeter/debug.log`. Disable it to stop
-logging. The log never contains tokens or auth URLs.
+logging. API keys, OAuth tokens, and auth URLs are redacted from every line
+before it is written, and the file is created mode 0600 and never auto-uploaded.
+It does still record your account email and usage history, so treat it as
+private if you share it.
 
 ## Status
 
@@ -175,10 +175,3 @@ PRs welcome. Conventions:
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-## Acknowledgments
-
-- Built on top of the official [Codex CLI](https://developers.openai.com/codex/cli)
-  and its experimental app-server JSON-RPC interface.
-- Architecture and conventions modelled on
-  [ClaudeMeter](https://github.com/puq-ai/claude-meter).

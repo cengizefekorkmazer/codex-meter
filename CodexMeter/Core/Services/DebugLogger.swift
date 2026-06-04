@@ -3,10 +3,9 @@
 //  CodexMeter
 //
 //  Appends JSON-RPC traffic to ~/Library/Caches/CodexMeter/debug.log when
-//  the user enables Debug mode in Settings. The log never includes tokens —
-//  the Codex app-server doesn't return them — but it does include account
-//  email and rate-limit history, so we treat it as user-private data
-//  (file mode 0600, never auto-uploaded).
+//  Debug mode is enabled. API keys, OAuth tokens, and auth URLs are redacted
+//  from every line (see `redacted(_:)`); account email and rate-limit history
+//  are not, so the file is treated as user-private (mode 0600, never uploaded).
 //
 
 import Foundation
@@ -21,6 +20,17 @@ final class DebugLogger {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f
+    }()
+
+    /// JSON keys whose string values are credentials or login URLs; redacted
+    /// from every logged frame, inbound and outbound.
+    static let sensitiveKeys = ["apiKey", "accessToken", "refreshToken", "authUrl", "verificationUrl"]
+
+    private static let redactionRegex: NSRegularExpression = {
+        let keys = sensitiveKeys.joined(separator: "|")
+        // Matches  "<key>" : "<value>"  — token/URL values never contain a quote.
+        let pattern = "\"(\(keys))\"\\s*:\\s*\"[^\"]*\""
+        return try! NSRegularExpression(pattern: pattern)
     }()
 
     private init() {}
@@ -56,6 +66,20 @@ final class DebugLogger {
         return dir.appendingPathComponent("debug.log")
     }
 
+    // MARK: - Redaction
+
+    /// Replaces the value of any `sensitiveKeys` entry with `<redacted>`. Frames
+    /// with nothing sensitive (or non-UTF-8 input) are returned unchanged.
+    static func redacted(_ data: Data) -> Data {
+        guard let text = String(data: data, encoding: .utf8) else { return data }
+        let range = NSRange(text.startIndex..., in: text)
+        guard redactionRegex.firstMatch(in: text, range: range) != nil else { return data }
+        let scrubbed = redactionRegex.stringByReplacingMatches(
+            in: text, range: range, withTemplate: "\"$1\":\"<redacted>\""
+        )
+        return Data(scrubbed.utf8)
+    }
+
     // MARK: - Implementation
 
     private func append(direction: String, body: Data) {
@@ -63,7 +87,7 @@ final class DebugLogger {
         let timestamp = formatter.string(from: Date())
         let prefix = "[\(timestamp)] \(direction) "
         var line = Data(prefix.utf8)
-        line.append(body)
+        line.append(Self.redacted(body))
         line.append(0x0A)
 
         queue.async {
