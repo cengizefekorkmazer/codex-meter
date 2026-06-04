@@ -51,14 +51,8 @@ final class CodexAppServerClient {
 
     // MARK: - Lifecycle
 
-    /// Resolve the codex binary, spawn the app-server, run the initialize
-    /// handshake, and start listening for notifications.
-    func connect() async throws {
-        guard let path = CodexBinaryResolver.resolve() else {
-            throw AppError.codexBinaryNotFound
-        }
-
-        try processManager.start(codexPath: path)
+    func connect(codexPath: String) async throws {
+        try processManager.start(codexPath: codexPath)
 
         guard let stdin = processManager.stdinHandle,
               let stdout = processManager.stdoutHandle else {

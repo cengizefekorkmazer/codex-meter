@@ -35,6 +35,7 @@
 		9F5A8334B72810752C1E5B98 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC956092800A2814BE6804C /* NotificationService.swift */; };
 		A8B7B5FEF193CE9BC3A25762 /* DebugLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = F735607A88CE5E47FABDC6BC /* DebugLogger.swift */; };
 		AAE5A7DE2A150EEA6DCDD298 /* CodexAppServerProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8B13CD05CA10D686B8366A /* CodexAppServerProcess.swift */; };
+		AC3F822463CAF51002A3448A /* BinaryPathPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F913C3CE796AD646FBD45C9A /* BinaryPathPicker.swift */; };
 		AF52E7BB8E6BD4357EA5AEC7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4331856FCD776813173FBE32 /* Assets.xcassets */; };
 		B506A16283496E6B3EF4C067 /* JSONRPCIncomingMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F1F34E64D55148086E4A10 /* JSONRPCIncomingMessageTests.swift */; };
 		C084B8C4D8D8849E2365496F /* AppearanceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF03195929AB7BBC5D4BD4D0 /* AppearanceSettingsView.swift */; };
@@ -105,6 +106,7 @@
 		F6919CCB036828A136710943 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F735607A88CE5E47FABDC6BC /* DebugLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogger.swift; sourceTree = "<group>"; };
 		F7E06F4E5EEC0099B124A7F8 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
+		F913C3CE796AD646FBD45C9A /* BinaryPathPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinaryPathPicker.swift; sourceTree = "<group>"; };
 		FE8E794B6126BDA857E45379 /* SigningInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningInView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -201,6 +203,7 @@
 		BF15E5084DF06607BB490E91 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				F913C3CE796AD646FBD45C9A /* BinaryPathPicker.swift */,
 				674D968D5DEEC0815A8E6E65 /* ColorTheme.swift */,
 			);
 			path = Components;
@@ -386,6 +389,7 @@
 				EB362694BABC26389D71F936 /* AppSettings.swift in Sources */,
 				D649D08A0B44080F6D9E2B12 /* AppState.swift in Sources */,
 				C084B8C4D8D8849E2365496F /* AppearanceSettingsView.swift in Sources */,
+				AC3F822463CAF51002A3448A /* BinaryPathPicker.swift in Sources */,
 				CA3C4C549DD15602D5F4FA13 /* CodexAppServerClient.swift in Sources */,
 				AAE5A7DE2A150EEA6DCDD298 /* CodexAppServerProcess.swift in Sources */,
 				E89C73A7AF88F40FBABB9C2B /* CodexBinaryResolver.swift in Sources */,

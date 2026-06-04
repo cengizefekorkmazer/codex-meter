@@ -4,6 +4,7 @@
 # Xcode (added once the Xcode project lands)
 build/
 DerivedData/
+dist/
 *.xcuserstate
 *.xcuserdatad/
 xcuserdata/

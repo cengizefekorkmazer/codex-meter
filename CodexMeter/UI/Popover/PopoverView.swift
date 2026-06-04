@@ -32,7 +32,10 @@ struct PopoverView: View {
     private var phaseView: some View {
         switch appState.phase {
         case .codexMissing:
-            InstallCodexView(onRetry: appState.retryStartup)
+            InstallCodexView(
+                onRetry: appState.retryStartup,
+                onSetCustomPath: appState.setCustomCodexBinaryPath
+            )
         case .startup:
             StartupView()
         case .error(let reason):

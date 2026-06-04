@@ -8,6 +8,7 @@ import AppKit
 
 struct InstallCodexView: View {
     var onRetry: () -> Void = {}
+    var onSetCustomPath: (String) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -30,11 +31,20 @@ struct InstallCodexView: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
+            Text("Already installed but not detected? Point CodexMeter at it directly.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+
             Spacer(minLength: 0)
 
             HStack {
                 Button("Check Again", action: onRetry)
                     .keyboardShortcut(.defaultAction)
+                Button("Choose codex…") {
+                    if let picked = BinaryPathPicker.choose() {
+                        onSetCustomPath(picked)
+                    }
+                }
                 Spacer()
                 Button("Quit", role: .destructive) {
                     NSApplication.shared.terminate(nil)
