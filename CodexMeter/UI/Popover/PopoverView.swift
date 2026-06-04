@@ -72,34 +72,45 @@ private struct ReadyView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
+                .padding(.horizontal, 16)
+
             if appState.snapshots.isEmpty {
                 Text("No usage data yet for this account.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                Spacer(minLength: 0)
             } else {
-                ForEach(appState.snapshots) { snapshot in
-                    if appState.settings.showFiveHourLimit, let primary = snapshot.primary {
-                        LimitCard(title: "5-Hour Limit", window: primary)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(appState.snapshots) { snapshot in
+                            if appState.settings.showFiveHourLimit, let primary = snapshot.primary {
+                                LimitCard(title: "5-Hour Limit", window: primary)
+                            }
+                            if appState.settings.showWeeklyLimit, let secondary = snapshot.secondary {
+                                LimitCard(title: "7-Day Limit", window: secondary)
+                            }
+                            if appState.settings.showCredits,
+                               let credits = snapshot.credits,
+                               credits.hasCredits {
+                                CreditsCard(credits: credits)
+                            }
+                            if let reached = snapshot.rateLimitReachedType {
+                                Text(humanize(reached))
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                            }
+                        }
                     }
-                    if appState.settings.showWeeklyLimit, let secondary = snapshot.secondary {
-                        LimitCard(title: "7-Day Limit", window: secondary)
-                    }
-                    if appState.settings.showCredits,
-                       let credits = snapshot.credits,
-                       credits.hasCredits {
-                        CreditsCard(credits: credits)
-                    }
-                    if let reached = snapshot.rateLimitReachedType {
-                        Text(humanize(reached))
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 2)
                 }
             }
-            Spacer(minLength: 0)
+
             footer
+                .padding(.horizontal, 16)
         }
-        .padding(16)
+        .padding(.vertical, 16)
     }
 
     private func humanize(_ raw: String) -> String {
