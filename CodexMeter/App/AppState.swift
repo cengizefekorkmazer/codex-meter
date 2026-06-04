@@ -98,7 +98,12 @@ final class AppState: ObservableObject {
         reconnectTask?.cancel()
         reconnectTask = nil
 
-        guard let codexPath = CodexBinaryResolver.resolve(customPath: settings.customCodexBinaryPath) else {
+        let customPath = settings.customCodexBinaryPath
+        let resolvedPath = await Task.detached(priority: .userInitiated) {
+            CodexBinaryResolver.resolve(customPath: customPath)
+        }.value
+
+        guard let codexPath = resolvedPath else {
             codexBinaryFound = false
             connection = .disconnected
             stopPollingTimer()
